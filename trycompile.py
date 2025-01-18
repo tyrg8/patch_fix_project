@@ -10,6 +10,7 @@ import json
 input_filename="merge_C++_fix2.jsonl"
 output_dir = "/mnt/sdb/cpp_files/"
 linux_dir = "/mnt/sdb/cpp_files_check"
+cache_bazel_dir="/home/xiaoran/.cache/bazel"
 os.makedirs(output_dir, exist_ok=True)
 
 cpu_count = os.cpu_count()
@@ -233,8 +234,10 @@ def compile_with_bazel(makefile_am_path):
         print("done")
         return True
     except subprocess.CalledProcessError:
+        shutil.rmtree(cache_bazel_dir, onerror=remove_readonly)
         return False
     except OSError as e:
+        shutil.rmtree(cache_bazel_dir, onerror=remove_readonly)
         print(f"OS error: {e}")
         return False
     
