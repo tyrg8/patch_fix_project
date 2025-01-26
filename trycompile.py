@@ -377,7 +377,7 @@ def find_makefile_am(folder_path, aim_file, file_index):
     makefile_am_paths = []
     for root, dirs, files in os.walk(folder_path):
         for file in files:
-            if file.lower() == "makefile.am":
+            if file.lower() == "configure.ac":
                 makefile_am_path = os.path.join(root, file)
                 compile_success_1 = compile_with_am(makefile_am_path)
                 if compile_success_1==False:
@@ -395,6 +395,40 @@ def find_makefile_am(folder_path, aim_file, file_index):
                         makefile_am_paths.append("?")
                         return makefile_am_paths
     return makefile_am_paths
+
+def compile_with_meson(makefile_am_path):
+    dir = os.path.dirname(makefile_am_path)
+    build_dir = os.path.join(os.path.dirname(makefile_am_path), "build")
+    try:
+        print("meson setup build ...")
+        subprocess.run(["meson","setup","build"], cwd=dir, check=True)        
+        print("ninja ...")
+        subprocess.run(["ninja"], cwd=build_dir, check=True)
+        print("done")
+        return True
+    except subprocess.CalledProcessError:
+        return False
+    except OSError as e:
+        print(f"OS error: {e}")
+        return False
+    
+def find_meson(folder_path, aim_file, file_index):
+    meson_paths = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            if file.lower() in ["meson","meson.build"]:
+                meson_path = os.path.join(root, file)
+                meson_paths.append(meson_path)
+                compile_success_1 = compile_with_meson(meson_path)
+                if compile_success_1==False:
+                    meson_paths.append("?")
+                    meson_paths.append("?")
+                    return meson_paths
+                else:
+                    meson_paths.append("?")
+                    return meson_paths
+    return meson_paths
+    
 
 def compile_with_autogen(makefile_am_path):
     dir = os.path.dirname(makefile_am_path)
@@ -574,6 +608,23 @@ with open(input_filename, "r",encoding = "utf-8") as r:
             else:
                 jilu_temp.append(21)
                 print(f"{project_path_lx} moz unfound")
+        if step==1:
+            print("--------start meson---------")
+            meson=find_meson(project_path_lx,aim_path,file_index)
+            if len(meson)==3:
+                jilu_temp.append(13)
+                print(f"{project_path_lx} meson fail")
+                jilupath_temp.append(meson[0])
+                print(meson)
+            elif len(meson)==2:
+                jilu_temp.append(3)
+                print(f"{project_path_lx} meson totally succeed")
+                jilupath_temp.append(meson[0])
+                print(meson)
+                step=0
+            else:
+                jilu_temp.append(23)
+                print(f"{project_path_lx} meson unfound")
         if step==1:
             print("--------start configure---------")
             configure=find_configure(project_path_lx,aim_path,file_index)
